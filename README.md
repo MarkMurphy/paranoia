@@ -8,37 +8,63 @@ If you wish to actually destroy an object you may call `destroy!(force: true)`. 
 
 If a record has `has_many` associations defined AND those associations have `dependent: :destroy` set on them, then they will also be soft-deleted if `acts_as_paranoid` a.k.a `paranoid` is set, otherwise the normal destroy will be called.
 
-## Installation & Usage
 
-For Rails 3, please use version 1 of Paranoia:
+
+## Table of contents
+
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Updating](#updating)
+- [Usage](#usage)
+    - [Configuring your model](#configuring-your-model)
+    - [Force destroy](#force-destroy)
+    - [Callbacks](#callbacks)
+    - [Retrieve all records including deleted](#retrieve-all-deleted-records-including-deleted)
+    - [Retrieve only deleted records](#retrieve-only-deleted-records)
+    - [Retrieve deleted associations](#retrieve-deleted-associations)
+    - [Check if a record is deleted](#check-if-a-record-is-deleted)
+    - [Restoration](#restoration)
+- [Bugs and feature requests](#bugs-and-feature-requests)
+- [Contributing](#contributing)
+- [Versioning](#versioning)
+- [Migrating](#migrating)
+- [License](#license)
+
+
+
+## Installation
+
+**Rails 4**
 
 ``` ruby
-gem "paranoia", "~> 1.0"
+gem "paranoia", "~> 3.0.0"
 ```
 
-For Rails 4, please use version 2 of Paranoia:
-
-``` ruby
-gem "paranoia", "~> 2.1.0"
-```
-
-Of course you can install this for Rails 4 from GitHub as well:
+Of course you can install this for from GitHub as well:
 
 ``` ruby
 gem "paranoia", :github => "radar/paranoia", :branch => "master"
 ```
 
-Don't forget to bundle install!
+**Rails 3**
+
+``` ruby
+gem "paranoia", "~> 1.0"
+```
+
+and don't forget to bundle!
 
 ``` shell
 bundle install
 ```
 
-Updating is as simple as `bundle update paranoia`.
+
+
+## Updating
+
+Updating your installation is as simple as `bundle update paranoia`.
 
 #### Run your migrations for the desired models
-
-Run:
 
 ``` shell
 rails generate migration AddDeletedAtToClients deleted_at:datetime:index
@@ -55,9 +81,51 @@ class AddDeletedAtToClients < ActiveRecord::Migration
 end
 ```
 
-### Usage
 
-#### In your model:
+
+## Configuration
+
+Support for Unique Keys with Null Values
+
+Most databases ignore null columns when it comes to resolving unique index
+constraints.  This means unique constraints that involve nullable columns may be
+problematic. Instead of using `NULL` to represent a not-deleted row, you can pick
+a value that you want paranoia to mean not deleted. Note that you can/should
+now apply a `NOT NULL` constraint to your `deleted_at` column.
+
+If you want to use a custome value other than `NULL` to mean not deleted, you can pass it as an option in your model:
+
+```ruby
+class Client < ActiveRecord::Base
+  acts_as_paranoid sentinel_value: DateTime.new(0)
+  # ...
+end
+```
+
+If you want to use a column other than `deleted_at`, you can pass it as an option in your model:
+
+``` ruby
+class Client < ActiveRecord::Base
+  acts_as_paranoid column: :destroyed_at
+  # ...
+end
+```
+
+You can also set either of the options above globally in a rails initializer, e.g. `config/initializer/paranoia.rb`
+
+```ruby
+# config/initializer/paranoia.rb
+Paranoia.configuration do |config|
+  config.default_column = :deleted_at
+  config.default_sentinel_value = DateTime.new(0)
+end
+```
+
+
+
+## Usage
+
+#### Configuring your model
 
 ``` ruby
 class Client < ActiveRecord::Base
@@ -79,6 +147,8 @@ Hey presto, it's there! Calling `destroy` will now set the `deleted_at` column:
 # => [current timestamp]
 ```
 
+#### Force destroy
+
 If you really want it gone *gone*, call `destroy!(force: true)`:
 
 ``` ruby
@@ -87,6 +157,8 @@ If you really want it gone *gone*, call `destroy!(force: true)`:
 >> client.destroy!(force: true)
 # => client
 ```
+
+#### Callbacks
 
 If you want a method to be called on destroy, simply provide a `before_destroy` callback:
 
@@ -104,15 +176,23 @@ class Client < ActiveRecord::Base
 end
 ```
 
-If you want to use a column other than `deleted_at`, you can pass it as an option:
+#### Retrieve all records including deleted
+
+If you want to find all records, even those which are deleted:
 
 ``` ruby
-class Client < ActiveRecord::Base
-  acts_as_paranoid column: :destroyed_at
-
-  ...
-end
+Client.with_deleted
 ```
+
+#### Retrieve only deleted records
+
+If you want to find only the deleted records:
+
+``` ruby
+Client.only_deleted
+```
+
+#### Retrieve deleted associations
 
 If you want to access soft-deleted associations, override the getter method:
 
@@ -122,23 +202,15 @@ def product
 end
 ```
 
-If you want to find all records, even those which are deleted:
-
-``` ruby
-Client.with_deleted
-```
-
-If you want to find only the deleted records:
-
-``` ruby
-Client.only_deleted
-```
+#### Check if a record is deleted
 
 If you want to check if a record is soft-deleted:
 
 ``` ruby
 client.destroyed?
 ```
+
+#### Restoration
 
 If you want to restore a record:
 
@@ -164,45 +236,38 @@ If you want callbacks to trigger before a restore:
 before_restore :callback_name_goes_here
 ```
 
-For more information, please look at the tests.
 
-## Acts As Paranoid Migration
 
-You can replace the older `acts_as_paranoid` methods as follows:
+## Bugs and feature requests
+
+Have a bug or a feature request? Please first search for existing and closed issues. If your problem or idea is not addressed yet, [please open a new issue](https://github.com/MarkMurphy/paranoia/issues/new).
+
+
+
+## Contributing
+
+Come one, come all, contributing is welcome! Feel free to send pull-requests, create issues and feature requests.
+
+
+
+## Versioning
+
+For transparency into our release cycle and in striving to maintain backward compatibility, Paranoia is maintained under [the Semantic Versioning guidelines](http://semver.org/). Sometimes we screw up, but we'll adhere to those rules whenever possible.
+
+
+
+## Migrating
+
+You can migarte from older versions of Paranoia by replacing the following methods as follows:
 
 | Old Syntax                 | New Syntax                     |
-|:-------------------------- |:------------------------------ |
-|`find_with_deleted(:all)`   | `Client.with_deleted`          |
-|`find_with_deleted(:first)` | `Client.with_deleted.first`    |
-|`find_with_deleted(id)`     | `Client.with_deleted.find(id)` |
+|----------------------------|--------------------------------|
+|`find_with_deleted(:all)`   | `with_deleted`                 |
+|`find_with_deleted(:first)` | `with_deleted.first`           |
+|`find_with_deleted(id)`     | `with_deleted.find(id)`        |
+|`really_destroy!`           | `destroy!(force: true)`        |
 
 
-The `recover` method in `acts_as_paranoid` runs `update` callbacks.  Paranoia's
-`restore` method does not do this.
-
-## Support for Unique Keys with Null Values
-
-Most databases ignore null columns when it comes to resolving unique index
-constraints.  This means unique constraints that involve nullable columns may be
-problematic. Instead of using `NULL` to represent a not-deleted row, you can pick
-a value that you want paranoia to mean not deleted. Note that you can/should
-now apply a `NOT NULL` constraint to your `deleted_at` column.
-
-Per model:
-
-```ruby
-# pick some value
-acts_as_paranoid sentinel_value: DateTime.new(0)
-```
-
-or globally in a rails initializer, e.g. `config/initializer/paranoia.rb`
-
-```ruby
-Paranoia.configuration do |config|
-  config.default_column = :deleted_at
-  config.default_sentinel_value = DateTime.new(0)
-end
-```
 
 ## License
 
