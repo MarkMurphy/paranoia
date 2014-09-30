@@ -1,12 +1,12 @@
 # Paranoia
 
-Paranoia is a re-implementation of [acts\_as\_paranoid](http://github.com/technoweenie/acts_as_paranoid) for Rails 3 and Rails 4, using much, much, much less code.
+Paranoia is a light weight and configurable soft-delete gem for Rails 4.
 
-You would use either plugin / gem if you wished that when you called `destroy` on an Active Record object that it didn't actually destroy it, but just *hide* the record. Paranoia does this by setting a `deleted_at` field to the current time when you `destroy` a record, and hides it by scoping all queries on your model to only include records which do not have a `deleted_at` field.
+Use this gem if you wished that when you called `destroy` on an Active Record object that it didn't actually destroy it, but just *hid* the record. Paranoia does this by setting a `deleted_at` field to the current time when you `destroy` a record, and hides it by scoping all queries on your model to only include records which do not have a `deleted_at` field.
 
-If you wish to actually destroy an object you may call `really_destroy!`. **WARNING**: This will also *really destroy* all `dependent: destroy` records, so please aim this method away from face when using.**
+If you wish to actually destroy an object you may call `destroy!(force: true)`. **WARNING**: This will also *destroy* all `dependent: destroy` records, so please aim this method away from face when using.
 
-If a record has `has_many` associations defined AND those associations have `dependent: :destroy` set on them, then they will also be soft-deleted if `acts_as_paranoid` is set,  otherwise the normal destroy will be called.
+If a record has `has_many` associations defined AND those associations have `dependent: :destroy` set on them, then they will also be soft-deleted if `acts_as_paranoid` a.k.a `paranoid` is set, otherwise the normal destroy will be called.
 
 ## Installation & Usage
 
@@ -19,18 +19,16 @@ gem "paranoia", "~> 1.0"
 For Rails 4, please use version 2 of Paranoia:
 
 ``` ruby
-gem "paranoia", "~> 2.0"
+gem "paranoia", "~> 2.1.0"
 ```
 
-Of course you can install this from GitHub as well:
+Of course you can install this for Rails 4 from GitHub as well:
 
 ``` ruby
 gem "paranoia", :github => "radar/paranoia", :branch => "master"
-# or
-gem "paranoia", :github => "radar/paranoia", :branch => "rails4"
 ```
 
-Then run:
+Don't forget to bundle install!
 
 ``` shell
 bundle install
@@ -63,7 +61,7 @@ end
 
 ``` ruby
 class Client < ActiveRecord::Base
-  acts_as_paranoid
+  acts_as_paranoid # you can also use "paranoid", it's an alias for "acts_as_paranoid"
 
   # ...
 end
@@ -81,12 +79,12 @@ Hey presto, it's there! Calling `destroy` will now set the `deleted_at` column:
 # => [current timestamp]
 ```
 
-If you really want it gone *gone*, call `really_destroy!`:
+If you really want it gone *gone*, call `destroy!(force: true)`:
 
 ``` ruby
 >> client.deleted_at
 # => nil
->> client.really_destroy!
+>> client.destroy!(force: true)
 # => client
 ```
 
@@ -200,7 +198,10 @@ acts_as_paranoid sentinel_value: DateTime.new(0)
 or globally in a rails initializer, e.g. `config/initializer/paranoia.rb`
 
 ```ruby
-Paranoia.default_sentinel_value = DateTime.new(0)
+Paranoia.configuration do |config|
+  config.default_column = :deleted_at
+  config.default_sentinel_value = DateTime.new(0)
+end
 ```
 
 ## License
