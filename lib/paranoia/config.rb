@@ -16,9 +16,11 @@ module Paranoia
 
   class Configuration #:nodoc:
     include ActiveSupport::Configurable
-    config_accessor :default_sentinel_value
-    config_accessor :default_column do
-      :deleted_at
-    end
+
+    DEFAULT_SENTINEL  = nil
+    DEFAULT_COLUMN    = :deleted_at
+
+    config_accessor(:default_sentinel_value)  { DEFAULT_SENTINEL }
+    config_accessor(:default_column)          { DEFAULT_COLUMN }
   end
 end
