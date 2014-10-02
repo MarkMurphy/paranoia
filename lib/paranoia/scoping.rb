@@ -3,19 +3,23 @@ module Paranoia
     extend ActiveSupport::Concern
 
     included do
-      default_scope { paranoid_scope }
+      default_scope { without_deleted }
     end
 
     module ClassMethods
-      def paranoid_scope
+      def without_deleted
         where(table_name => { paranoia_column => paranoia_sentinel_value })
       end
+
+      alias_method :paranoia_scope, :without_deleted
+      alias_method :not_deleted, :without_deleted
+      alias_method :except_deleted, :without_deleted
 
       def only_deleted
         with_deleted.where.not(table_name => { paranoia_column => paranoia_sentinel_value })
       end
 
-      alias :deleted :only_deleted
+      alias_method :deleted, :only_deleted
 
       if ActiveRecord::Base.respond_to?(:unscope)
         # Rails >= 4.1
