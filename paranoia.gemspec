@@ -22,7 +22,7 @@ Gem::Specification.new do |gem|
   gem.required_rubygems_version = ">= 1.3.6"
   gem.rubyforge_project         = "paranoia"
 
-  gem.add_dependency "activerecord", "~> 4.1.0"
+  gem.add_dependency "activerecord", ">= 4.1.0"
 
   gem.add_development_dependency "rake"
   gem.add_development_dependency "sqlite3"
